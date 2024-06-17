@@ -15,6 +15,7 @@ import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import useTemplates from '../hooks/useTemplates'
 import useUser from '../hooks/useUser'
 import { useNavigate } from 'react-router-dom'
+import { collection, getDocs } from "firebase/firestore";
 
 const CreateTemplate = () => {
     const [formData, setFormData] = useState({
@@ -32,6 +33,9 @@ const CreateTemplate = () => {
 
     const {data: templates, isError: templatesIsError, isLoading: templatesIsLoading, refetch: templatesRefetch} = useTemplates()
 
+
+    
+
     const {data : user, isLoading} = useUser()
 
     const navigate = useNavigate()
@@ -46,6 +50,7 @@ const CreateTemplate = () => {
     const handleFileSelect = async(e) => {
       setImageAsset((prevAsset) => ({...prevAsset, isImageLoading : true}))
       const file = e.target.files[0];
+      
 
       if(file && isAllowed(file)){
         const storageRef = ref(storage, `Templates/${Date.now()}-${file.name}`)
@@ -91,12 +96,15 @@ const CreateTemplate = () => {
         setImageAsset((prevAsset) => ({...prevAsset,
           progress : 0,
           uri : null,
+          
           }))
       }, 2000);
   
       const deleteRef = ref(storage, imageAsset.uri)
       deleteObject(deleteRef).then(() => {
         toast.success("Image removed");
+
+        
          
       })
     }
@@ -128,16 +136,52 @@ const CreateTemplate = () => {
         name : templates && templates.length>0 ? `Template${templates.length + 1}` : "Template1",
         timestamp : timeStamp,
       }
+
+      
+      
       await setDoc(doc(db, "templates", id), _doc).then(()=>{
-        setFormData((prevData)=>({...prevData, title:"", imageURL:""}))
-        setImageAsset((prevAsset)=>({...prevAsset, uri : null}))
-        setSelectedTags([])
+        setFormData((prevData)=>({...prevData, title:"", imageURL:""}));
+        setImageAsset((prevAsset)=>({...prevAsset, uri : null}));
+        setSelectedTags([]);
         templatesRefetch()
         toast.success("Data pushed to the cloud")
       }).catch(error => {
-
+        toast.error(`Error : ${error.message}`)
       })
     }
+
+    // const pushToCloud = async() => {
+    //   const timeStamp = serverTimestamp();
+    //   const id = `${Date.now()}`;
+      
+    //   // Fetch the latest count of templates
+    //   const templatesSnapshot = await getDocs(collection(db, "templates"));
+    //   const templatesCount = templatesSnapshot.size;
+    
+    //   const _doc = {
+    //     _id: id,
+    //     title: formData.title,
+    //     imageURL: imageAsset.uri,
+    //     tags: selectedTags,
+    //     name: `Template${templatesCount + 1}`,
+    //     timestamp: timeStamp,
+    //   };
+    
+    //   try {
+    //     await setDoc(doc(db, "templates", id), _doc);
+    //     setFormData((prevData) => ({ ...prevData, title: "", imageURL: "" }));
+    //     setImageAsset((prevAsset) => ({ ...prevAsset, uri: null }));
+    //     setSelectedTags([]);
+    //     templatesRefetch();
+    //     toast.success("Data pushed to the cloud");
+    //   } catch (error) {
+    //     toast.error(`Error: ${error.message}`);
+    //   }
+    // };
+    
+    
+
+
 // function to remove data from cloud
     const removeTemplate = async(template) => {
       const deleteRef = ref(storage, template?.imageURL)
@@ -232,23 +276,35 @@ const CreateTemplate = () => {
               </React.Fragment>}
           </React.Fragment>
         )}
+
+
       </div>
 
-      {/* tags */}
-      <div className="w-full flex items-center flex-wrap gap-2">
+       {/* tags */}
+       <div className="w-full flex items-center flex-wrap gap-2">
         {initialTags.map((tag, i) => {
+          return(
           <div key={i} className={`border border-gray-300 px-2 py-1 rounded-md cursor-pointer ${selectedTags.includes(tag) ? "bg-blue-500 text-white" : "" }`} onClick={() => handleSelectedTags(tag)}>
+          
             <p className="text-xs">{tag}</p>
           </div>
+          )
         })}
       </div>
+
+       
+      
 
       {/* button action */}
       <button type="button" className="w-full bg-blue-700 text-white rounded-md py-3" onClick={pushToCloud}>
         Save
       </button>
 
+       
+
       </div>
+
+     
 
       
 
